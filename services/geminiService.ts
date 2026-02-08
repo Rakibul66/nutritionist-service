@@ -1,11 +1,22 @@
 import { GoogleGenAI, Chat } from "@google/genai";
 
-// Initialize the API client
-// Note: In a production environment, ensure process.env.API_KEY is defined in your build configuration.
-const apiKey = process.env.API_KEY || ''; 
-const ai = new GoogleGenAI({ apiKey });
+const getApiKey = () => {
+  const key = import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
+
+  if (!key) {
+    throw new Error(
+      "Missing VITE_GOOGLE_GENAI_API_KEY. Set it via a .env file or your deployment environment."
+    );
+  }
+
+  return key;
+};
+
+const createGoogleClient = () => new GoogleGenAI({ apiKey: getApiKey() });
 
 export const createChatSession = (): Chat => {
+  const ai = createGoogleClient();
+
   return ai.chats.create({
     model: 'gemini-3-flash-preview',
     config: {
