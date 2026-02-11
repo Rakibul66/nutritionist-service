@@ -7,31 +7,35 @@ const LeadMagnet: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      // Simulate API call
-      setTimeout(() => {
-        setStatus('success');
-        setEmail('');
-      }, 1000);
-    }
+    if (!email) return;
+    const mailto = `mailto:probalofficial007@gmail.com?subject=${encodeURIComponent(
+      'Nutrition Consultation Request'
+    )}&body=${encodeURIComponent(`Email: ${email}\n\nI would like to discuss...`)}`;
+    window.location.href = mailto;
+    setStatus('success');
+    setEmail('');
   };
 
   return (
     <section className="py-16 bg-green-900 text-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="bg-green-800/50 rounded-3xl p-8 md:p-12 border border-green-700 shadow-2xl backdrop-blur-sm">
-          <Download className="h-12 w-12 text-green-300 mx-auto mb-4" />
-          <h2 className="text-3xl font-bold mb-4">ফ্রি ডাউনলোড করুন!</h2>
-          <p className="text-green-100 text-lg mb-8 max-w-2xl mx-auto">
-            "বাচ্চাদের টিফিনের ১০টি স্বাস্থ্যকর রেসিপি" - আমাদের এই এক্সক্লুসিভ পিডিএফ গাইডটি বিনামূল্যে পেতে আপনার ইমেইল দিন।
-          </p>
+        <div className="bg-green-800/60 rounded-3xl p-8 md:p-12 border border-green-700 shadow-2xl backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <Mail className="h-12 w-12 text-green-300" />
+            <h2 className="text-3xl font-bold">আমাকে ইমেইল করুন</h2>
+            <p className="text-green-100 text-lg text-center max-w-2xl">
+              লাইফস্টাইল বা ডায়েট সম্পর্কিত অনুরোধ, প্রশ্ন বা হেল্পের জন্য আপনার ইমেইলটি দিন।
+              আমি ব্যক্তিগতভাবে উত্তর দেব এবং পরবর্তী ধাপগুলো আদান-প্রদান করব। এই ফর্ম কোনো ফ্রি পিডিএফ ডাউনলোড নয়।
+            </p>
+            <p className="text-xs text-green-200">পাঠানোর পর probalofficial007@gmail.com এ একটি ইমেইল উইন্ডো খুলবে।</p>
+          </div>
 
           {status === 'success' ? (
-            <div className="bg-green-600 text-white p-4 rounded-lg animate-fade-in">
-              <p className="font-bold">ধন্যবাদ! আপনার ইমেইলে পিডিএফটি পাঠানো হয়েছে।</p>
+            <div className="bg-green-600 text-white p-4 rounded-lg mt-6 animate-fade-in">
+              <p className="font-bold">ধন্যবাদ! আপনার মেইল তালিকাভুক্ত হয়েছে, দ্রুত আপনার সাথে যোগাযোগ করব।</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto mt-6">
               <div className="relative flex-grow">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-gray-400" />
@@ -49,12 +53,12 @@ const LeadMagnet: React.FC = () => {
                 type="submit"
                 className="px-6 py-3 border border-transparent text-base font-medium rounded-lg text-green-900 bg-green-300 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-green-900 focus:ring-white transition-colors"
               >
-                ডাউনলোড
+                পাঠান
               </button>
             </form>
           )}
-          <p className="text-green-400 text-xs mt-4">
-            আমরা স্প্যামিং পছন্দ করি না। আপনার ইমেইল ১০০% নিরাপদ।
+          <p className="text-green-400 text-xs mt-4 text-center">
+            আমরা স্প্যামিং পছন্দ করি না। আপনার ইমেইল ১০০% নিরাপদ, কোন পিডিএফ সংযুক্ত নেই।
           </p>
         </div>
       </div>

@@ -45,7 +45,7 @@ const Hero: React.FC = () => {
                <div className="absolute bottom-0 left-0 -ml-4 -mb-4 w-32 h-32 bg-green-200 rounded-full blur-2xl opacity-60"></div>
                
                <img
-                 src="https://picsum.photos/600/600?random=50" 
+                 src="https://raw.githubusercontent.com/Rakibul66/nutritionist-service/refs/heads/main/1770625746041.png"
                  alt="Nutritionist Profile"
                  className="w-full h-full object-cover rounded-3xl shadow-2xl relative z-10 border-4 border-white"
                />

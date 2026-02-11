@@ -20,6 +20,7 @@ export interface Ebook {
   price: number;
   coverImage: string;
   description: string;
+  driveLink?: string;
 }
 
 export interface Testimonial {
@@ -34,3 +35,29 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
 }
+
+export interface EbookReview {
+  id: string;
+  bookId?: string;
+  bookTitle: string;
+  message: string;
+  rating: number;
+  userName: string;
+  userEmail: string;
+  submittedAt: string;
+}
+
+export interface EbookOrder {
+  id: string;
+  ebookId: string;
+  ebookTitle: string;
+  price: number;
+  userName: string;
+  userEmail: string;
+  paymentMethod: string;
+  phone?: string;
+  status?: 'pending' | 'paid' | 'completed';
+  createdAt: string;
+}
+
+export type EbookPublishPayload = Omit<Ebook, 'id'>;

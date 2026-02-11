@@ -1,5 +1,5 @@
 import React from 'react';
-import { Facebook, Instagram, Mail, Youtube } from 'lucide-react';
+import { Facebook, Youtube, MessageCircle } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
@@ -23,11 +23,34 @@ const Footer: React.FC = () => {
           </div>
           <div>
             <h4 className="text-white font-semibold mb-4">যোগাযোগ</h4>
-            <div className="flex space-x-4">
-              <a href="#" className="hover:text-green-400"><Facebook className="h-5 w-5" /></a>
-              <a href="#" className="hover:text-green-400"><Instagram className="h-5 w-5" /></a>
-              <a href="#" className="hover:text-green-400"><Youtube className="h-5 w-5" /></a>
-              <a href="#" className="hover:text-green-400"><Mail className="h-5 w-5" /></a>
+            <div className="flex flex-col gap-3 text-sm">
+              <a
+                href="https://www.facebook.com/share/1Dw4WPemns/"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 text-gray-300 hover:text-green-400"
+              >
+                <Facebook className="h-5 w-5" />
+                Facebook
+              </a>
+              <a
+                href="https://youtube.com/@probalkumarmondal?si=oDzoraMBDxMjGY8m"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 text-gray-300 hover:text-green-400"
+              >
+                <Youtube className="h-5 w-5" />
+                YouTube
+              </a>
+              <a
+                href="https://wa.me/01827664306"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 text-gray-300 hover:text-green-400"
+              >
+                <MessageCircle className="h-5 w-5" />
+                WhatsApp
+              </a>
             </div>
             <p className="mt-4 text-xs text-gray-500">ঢাকা, বাংলাদেশ</p>
           </div>
