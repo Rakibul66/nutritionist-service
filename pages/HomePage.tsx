@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
 import About from '../components/About';
+import ChildGrowthChecker from '../components/ChildGrowthChecker';
 import Services from '../components/Services';
 import EbookStore from '../components/EbookStore';
 import LeadMagnet from '../components/LeadMagnet';
@@ -14,10 +15,11 @@ const HomePage: React.FC = () => (
     <main>
       <Hero />
       <About />
+      <ChildGrowthChecker />
       <Services />
       <EbookStore />
-      <LeadMagnet />
       <Testimonials />
+      <LeadMagnet />
     </main>
     <Footer />
   </div>

@@ -52,7 +52,6 @@ const Footer: React.FC = () => {
                 WhatsApp
               </a>
             </div>
-            <p className="mt-4 text-xs text-gray-500">ঢাকা, বাংলাদেশ</p>
           </div>
         </div>
         <div className="border-t border-gray-800 pt-8 text-center text-xs text-gray-500">
