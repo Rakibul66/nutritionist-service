@@ -4,6 +4,34 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
 
+const getGoogleAuthErrorMessage = (error: unknown): string => {
+  const code = typeof error === 'object' && error && 'code' in error
+    ? String((error as { code?: string }).code)
+    : '';
+
+  if (code === 'auth/unauthorized-domain') {
+    return 'এই ডোমেইন Google login-এর জন্য অনুমোদিত নয়। Firebase Authorized domains-এ Vercel ডোমেইন যোগ করুন।';
+  }
+
+  if (code === 'auth/popup-blocked') {
+    return 'Popup ব্লক হয়েছে। ব্রাউজারের popup allow করে আবার চেষ্টা করুন।';
+  }
+
+  if (code === 'auth/popup-closed-by-user') {
+    return 'Google login popup বন্ধ হয়ে গেছে। আবার চেষ্টা করুন।';
+  }
+
+  if (code === 'auth/network-request-failed') {
+    return 'নেটওয়ার্ক সমস্যা হয়েছে। ইন্টারনেট চেক করে আবার চেষ্টা করুন।';
+  }
+
+  if (code === 'auth/operation-not-allowed') {
+    return 'Firebase Console-এ Google provider enable করা নেই। আগে enable করুন।';
+  }
+
+  return 'Google login সম্পন্ন হয়নি। আবার চেষ্টা করুন।';
+};
+
 const UserLoginPage: React.FC = () => {
   const { user, login, loginWithEmail, signupWithEmail, adminLogin } = useAuth();
   const [searchParams] = useSearchParams();
@@ -29,7 +57,7 @@ const UserLoginPage: React.FC = () => {
       navigate(next, { replace: true });
     } catch (err) {
       console.error(err);
-      setError('Google login সম্পন্ন হয়নি। আবার চেষ্টা করুন।');
+      setError(getGoogleAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }

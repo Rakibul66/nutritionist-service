@@ -66,24 +66,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async () => {
     if (!firebaseAuth) {
-      console.warn('Firebase auth is not configured.');
-      return;
+      throw new Error('Firebase auth is not configured.');
     }
     await signInWithPopup(firebaseAuth, googleAuthProvider);
   };
 
   const loginWithEmail = async (email: string, password: string) => {
     if (!firebaseAuth) {
-      console.warn('Firebase auth is not configured.');
-      return;
+      throw new Error('Firebase auth is not configured.');
     }
     await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
   };
 
   const signupWithEmail = async (email: string, password: string) => {
     if (!firebaseAuth) {
-      console.warn('Firebase auth is not configured.');
-      return;
+      throw new Error('Firebase auth is not configured.');
     }
     await createUserWithEmailAndPassword(firebaseAuth, email.trim(), password);
   };
