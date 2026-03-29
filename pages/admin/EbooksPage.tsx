@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Pencil, Trash2, X, BookText } from 'lucide-react';
 import { BookCategory, Ebook, EbookPublishPayload } from '../../types';
-import { fetchRemoteEbooks, publishEbook, uploadEbookPdf } from '../../services/firebaseService';
+import { fetchRemoteEbooks, publishEbook, updateEbook, uploadEbookPdf } from '../../services/firebaseService';
 
 const emptyPayload: EbookPublishPayload = {
   title: '',
@@ -101,7 +101,8 @@ const EbooksPage: React.FC = () => {
     setStatusMessage(null);
     try {
       if (editingId) {
-        setEbooks((prev) => prev.map((book) => (book.id === editingId ? { ...book, ...formState } : book)));
+        await updateEbook(editingId, formState);
+        await loadEbooks();
         setStatusMessage('ইবুক তথ্য আপডেট হয়েছে।');
       } else {
         await publishEbook(formState);
@@ -272,6 +273,9 @@ const EbooksPage: React.FC = () => {
                     onChange={(event) => handleFormChange('coverImage', event.target.value)}
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                   />
+                  <p className="text-xs text-slate-500">
+                    এখানে শুধু ইমেজ URL দিন (jpg/png/webp)। Google Drive `.../view` PDF link দিলে কভার লোড হবে না।
+                  </p>
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">

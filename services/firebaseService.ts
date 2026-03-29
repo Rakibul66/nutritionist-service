@@ -25,6 +25,7 @@ import {
   Feedback,
   FeedbackStatus,
   FeedbackSubmitPayload,
+  FeedbackUpdatePayload,
   Service,
   ServiceOrder,
   ServiceOrderPayload,
@@ -58,6 +59,7 @@ import {
   submitServiceOrder as submitLocalServiceOrder,
   fetchTestimonials as fetchLocalTestimonials,
   submitFeedbackEntry,
+  updateFeedbackEntry as updateLocalFeedbackEntry,
   upsertServiceIntakeForm as upsertLocalServiceIntakeForm,
   updateFaq as updateLocalFaq,
   updateFeedbackStatus as updateLocalFeedbackStatus,
@@ -113,8 +115,11 @@ const mapDocToFeedback = (docData: DocumentData & { id?: string }): Feedback => 
   role: docData.role ?? 'Visitor',
   content: docData.content ?? '',
   image: docData.image ?? 'https://picsum.photos/100/100?random=99',
+  userId: docData.userId,
+  userEmail: docData.userEmail,
   status: docData.status ?? 'pending',
   submittedAt: asIsoString(docData.createdAt),
+  updatedAt: docData.updatedAt ? asIsoString(docData.updatedAt) : undefined,
 });
 
 export const fetchRemoteEbooks = async (): Promise<Ebook[]> => {
@@ -177,6 +182,26 @@ export const submitFeedback = async (payload: FeedbackSubmitPayload): Promise<vo
     status: 'pending',
     createdAt: serverTimestamp(),
   });
+};
+
+export const updateFeedback = async (
+  feedbackId: string,
+  payload: FeedbackUpdatePayload
+): Promise<Feedback | null> => {
+  if (!firebaseFirestore) {
+    return updateLocalFeedbackEntry(feedbackId, payload);
+  }
+
+  await updateDoc(doc(firebaseFirestore, 'feedbacks', feedbackId), {
+    ...payload,
+    updatedAt: serverTimestamp(),
+  });
+
+  const updatedSnap = await getDoc(doc(firebaseFirestore, 'feedbacks', feedbackId));
+  if (!updatedSnap.exists()) {
+    return null;
+  }
+  return mapDocToFeedback({ ...updatedSnap.data(), id: updatedSnap.id });
 };
 
 export const fetchFeedbackEntries = async (): Promise<Feedback[]> => {
@@ -341,6 +366,17 @@ export const publishEbook = async (payload: EbookPublishPayload): Promise<void> 
   await addDoc(collection(firebaseFirestore, 'ebooks'), {
     ...payload,
     createdAt: serverTimestamp(),
+  });
+};
+
+export const updateEbook = async (ebookId: string, payload: EbookPublishPayload): Promise<void> => {
+  if (!firebaseFirestore) {
+    console.warn('Firebase not configured, ebook update skipped');
+    return;
+  }
+  await updateDoc(doc(firebaseFirestore, 'ebooks', ebookId), {
+    ...payload,
+    updatedAt: serverTimestamp(),
   });
 };
 

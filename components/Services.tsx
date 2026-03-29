@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, X, Copy, Check } from 'lucide-react';
+import { CheckCircle, X, Copy, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Service } from '../types';
 import { fetchRemoteServices, placeServiceOrder } from '../services/firebaseService';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,11 +12,18 @@ const serviceImages: Record<string, string> = {
   '3': 'https://raw.githubusercontent.com/Rakibul66/Recent-Project-Apk/refs/heads/main/1770827153538.webp',
 };
 
-const Services: React.FC = () => {
+type ServicesProps = {
+  compact?: boolean;
+};
+
+const Services: React.FC<ServicesProps> = ({ compact = false }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
+  const [detailsService, setDetailsService] = useState<Service | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [cardsPerView, setCardsPerView] = useState(1);
+  const [activeSlide, setActiveSlide] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'bkash' | 'nagad'>('bkash');
   const [copied, setCopied] = useState(false);
   const [paymentNumber, setPaymentNumber] = useState('');
@@ -37,6 +44,52 @@ const Services: React.FC = () => {
     };
     loadServices();
   }, []);
+
+  useEffect(() => {
+    const updateCardsPerView = () => {
+      if (window.innerWidth >= 1280) {
+        setCardsPerView(3);
+        return;
+      }
+      if (window.innerWidth >= 768) {
+        setCardsPerView(2);
+        return;
+      }
+      setCardsPerView(1);
+    };
+
+    updateCardsPerView();
+    window.addEventListener('resize', updateCardsPerView);
+
+    return () => window.removeEventListener('resize', updateCardsPerView);
+  }, []);
+
+  const visibleServices = services;
+
+  const maxSlide = Math.max(0, visibleServices.length - cardsPerView);
+
+  useEffect(() => {
+    setActiveSlide(0);
+  }, [services.length, cardsPerView, compact]);
+
+  useEffect(() => {
+    if (activeSlide > maxSlide) {
+      setActiveSlide(maxSlide);
+    }
+  }, [activeSlide, maxSlide]);
+
+  useEffect(() => {
+    if (maxSlide <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setActiveSlide((prev) => (prev >= maxSlide ? 0 : prev + 1));
+    }, 3200);
+
+    return () => window.clearInterval(timer);
+  }, [maxSlide]);
+
+  const goPrev = () => setActiveSlide((prev) => (prev <= 0 ? maxSlide : prev - 1));
+  const goNext = () => setActiveSlide((prev) => (prev >= maxSlide ? 0 : prev + 1));
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -98,70 +151,191 @@ const Services: React.FC = () => {
     setCopied(false);
   };
 
+  const handleStartBooking = (service: Service) => {
+    if (!user) {
+      navigate('/login?next=/services');
+      return;
+    }
+    openBookingModal(service);
+  };
+
   return (
     <section id="services" className="py-20 bg-[#F9FAFB]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-14">
+        <div className="text-center max-w-2xl mx-auto mb-8">
           <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">পার্সোনালাইজড কনসালটেন্সি প্যাকেজ</h2>
           <p className="mt-3 text-base text-slate-500">আপনার শারীরিক লক্ষ্যের জন্য সঠিক সায়েন্টিফিক ডায়েট প্ল্যান বেছে নিন।</p>
+          <div className="mt-4 flex justify-center">
+            <svg viewBox="0 0 240 28" className="h-5 w-52 text-emerald-500/70" fill="none" aria-hidden="true">
+              <path
+                d="M4 14C36 2 66 26 98 14C130 2 160 26 192 14C207 8 221 8 236 14"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <div
-              key={service.id}
-              className="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+        <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goPrev}
+              className="rounded-full border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-50"
+              aria-label="আগের সার্ভিস"
             >
-              <div className="relative overflow-hidden">
-                <img
-                  src={
-                    service.image ||
-                    serviceImages[service.id] ||
-                    'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=900&q=80'
-                  }
-                  alt={service.title}
-                  loading="lazy"
-                  className="h-44 w-full object-cover transition duration-500 group-hover:scale-105 sm:h-48"
-                />
-              </div>
-              <div className="flex flex-1 flex-col gap-3 px-5 py-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-slate-900">{service.title}</h3>
-                    <p className="mt-2 text-sm text-slate-500 leading-relaxed">{service.description}</p>
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={goNext}
+              className="rounded-full border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-50"
+              aria-label="পরের সার্ভিস"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-hidden">
+          <div
+            className="flex gap-6 transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${(activeSlide * 100) / cardsPerView}%)` }}
+          >
+            {visibleServices.map((service) => (
+              <article
+                key={service.id}
+                onClick={() => setDetailsService(service)}
+                className="group w-full shrink-0 cursor-pointer md:w-[calc(50%-12px)] xl:w-[calc(33.333%-16px)]"
+              >
+                <div
+                  className={`flex h-full flex-col overflow-hidden border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl ${
+                    compact ? 'rounded-2xl' : 'rounded-3xl'
+                  }`}
+                >
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={
+                        service.image ||
+                        serviceImages[service.id] ||
+                        'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=900&q=80'
+                      }
+                      alt={service.title}
+                      loading="lazy"
+                      className={`w-full object-cover transition duration-500 group-hover:scale-105 ${compact ? 'h-36 sm:h-40' : 'h-44 sm:h-48'}`}
+                    />
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-slate-900">{service.price}</p>
-                    <span className="text-[11px] uppercase tracking-widest text-slate-400 block">প্রতি মাসে</span>
+                  <div className={`flex flex-1 flex-col gap-2.5 ${compact ? 'px-4 py-4' : 'px-5 py-5'}`}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className={`${compact ? 'text-lg' : 'text-xl'} font-semibold text-slate-900`}>{service.title}</h3>
+                        <p className={`mt-1.5 text-sm leading-relaxed text-slate-500 ${compact ? 'max-h-10 overflow-hidden' : ''}`}>{service.description}</p>
+                      </div>
+                      <div className="text-right">
+                        {compact && (
+                          <span className="mb-1 inline-block rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700">
+                            বিস্তারিত
+                          </span>
+                        )}
+                        <p className="text-sm font-bold text-slate-900">{service.price}</p>
+                        <span className="block text-[11px] uppercase tracking-widest text-slate-400">প্রতি মাসে</span>
+                      </div>
+                    </div>
+                    <ul className="space-y-2 text-xs font-medium text-slate-600">
+                      {(compact ? service.features.slice(0, 2) : service.features).map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <CheckCircle className="mt-1 h-4 w-4 flex-shrink-0 text-emerald-500" />
+                          <span className="leading-tight">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className={`${compact ? 'px-4 pb-4' : 'px-5 pb-5'}`}>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleStartBooking(service);
+                      }}
+                      className="w-full rounded-full border border-slate-200 bg-slate-100 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-200 active:translate-y-px"
+                    >
+                      বুকিং দিন
+                    </button>
                   </div>
                 </div>
-                <ul className="space-y-2 text-xs font-medium text-slate-600">
-                  {service.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <CheckCircle className="mt-1 h-4 w-4 text-emerald-500 flex-shrink-0" />
-                      <span className="leading-tight">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="px-5 pb-5">
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      navigate('/login?next=/services');
-                      return;
-                    }
-                    openBookingModal(service);
-                  }}
-                  className="w-full rounded-full border border-slate-200 bg-slate-100 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-200 active:translate-y-px"
-                >
-                  বুকিং দিন
-                </button>
-              </div>
-            </div>
-          ))}
+              </article>
+            ))}
+          </div>
         </div>
+
+        {maxSlide > 0 && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            {Array.from({ length: maxSlide + 1 }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveSlide(index)}
+                aria-label={`স্লাইড ${index + 1}`}
+                className={`h-2.5 rounded-full transition-all ${
+                  activeSlide === index ? 'w-7 bg-emerald-600' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
       </div>
+
+      {detailsService && (
+        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto px-4 pb-8 pt-20 sm:pt-24 sm:pb-10">
+          <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-sm" onClick={() => setDetailsService(null)} />
+          <div className="relative max-h-[calc(100vh-7rem)] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:max-h-[calc(100vh-8rem)]">
+            <div className="mb-5 flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">সার্ভিস বিস্তারিত</p>
+                <h3 className="mt-1 text-xl font-bold text-slate-900">{detailsService.title}</h3>
+                <p className="mt-1 text-sm font-semibold text-emerald-600">{detailsService.price}</p>
+              </div>
+              <button onClick={() => setDetailsService(null)} className="rounded-full p-2 transition hover:bg-slate-100">
+                <X className="h-5 w-5 text-slate-500" />
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <p className="text-xs font-semibold text-slate-500">প্যাকেজের পূর্ণ বিবরণ</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">{detailsService.description}</p>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <p className="text-xs font-semibold text-slate-500">আপনি যা যা পাবেন</p>
+              <ul className="mt-3 space-y-2 text-sm text-slate-700">
+              {detailsService.features.map((feature, idx) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+              </ul>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setDetailsService(null)}
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                বন্ধ করুন
+              </button>
+              <button
+                onClick={() => {
+                  const service = detailsService;
+                  setDetailsService(null);
+                  handleStartBooking(service);
+                }}
+                className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              >
+                এই প্যাকেজ বুকিং দিন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedService && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

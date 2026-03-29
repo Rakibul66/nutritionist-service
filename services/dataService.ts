@@ -8,6 +8,7 @@ import {
   Feedback,
   FeedbackStatus,
   FeedbackSubmitPayload,
+  FeedbackUpdatePayload,
   FaqItem,
   FaqPublishPayload,
   ServiceOrder,
@@ -192,8 +193,11 @@ const asFeedback = (entry: Partial<Feedback>): Feedback => ({
   role: entry.role?.trim() || 'Visitor',
   content: entry.content?.trim() || '',
   image: entry.image?.trim() || 'https://picsum.photos/100/100?random=99',
+  userId: entry.userId?.trim() || undefined,
+  userEmail: entry.userEmail?.trim()?.toLowerCase() || undefined,
   status: normalizeStatus(entry.status),
   submittedAt: entry.submittedAt ?? nowIso(),
+  updatedAt: entry.updatedAt ?? undefined,
 });
 
 const buildSeedFeedback = (): Feedback[] =>
@@ -491,6 +495,27 @@ export const submitFeedbackEntry = async (payload: FeedbackSubmitPayload): Promi
   const nextList = [nextEntry, ...feedbackList];
   writeFeedbackToStorage(nextList);
   return nextEntry;
+};
+
+export const updateFeedbackEntry = async (
+  feedbackId: string,
+  payload: FeedbackUpdatePayload
+): Promise<Feedback | null> => {
+  const feedbackList = readFeedbackFromStorage();
+  const existing = feedbackList.find((item) => item.id === feedbackId);
+  if (!existing) {
+    return null;
+  }
+
+  const nextItem = asFeedback({
+    ...existing,
+    ...payload,
+    updatedAt: nowIso(),
+  });
+
+  const nextList = feedbackList.map((item) => (item.id === feedbackId ? nextItem : item));
+  writeFeedbackToStorage(nextList);
+  return nextItem;
 };
 
 export const updateFeedbackStatus = async (

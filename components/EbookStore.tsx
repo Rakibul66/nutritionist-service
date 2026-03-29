@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BookCategory, Ebook, EbookOrder } from '../types';
 import { fetchEbookOrderById, fetchRemoteEbooks, placeOrder } from '../services/firebaseService';
-import { ChevronLeft, ChevronRight, ArrowUpRight, Lock, Copy, Check } from 'lucide-react';
+import { ArrowUpRight, Lock, Copy, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,6 +14,35 @@ const categoryLabels: Record<'All' | BookCategory, string> = {
 };
 
 const EBOOK_ORDER_ACCESS_KEY = 'ebook-order-access-v1';
+const FALLBACK_COVER_IMAGE =
+  'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=900&q=80';
+
+const extractDriveFileId = (value: string): string | null => {
+  const fileMatch = value.match(/\/file\/d\/([^/]+)/);
+  if (fileMatch?.[1]) return fileMatch[1];
+  const openMatch = value.match(/[?&]id=([^&]+)/);
+  if (openMatch?.[1]) return openMatch[1];
+  return null;
+};
+
+const resolveCoverImageUrl = (rawUrl?: string): string => {
+  const safe = (rawUrl ?? '').trim();
+  if (!safe) return FALLBACK_COVER_IMAGE;
+  if (safe.includes('drive.google.com')) {
+    const fileId = extractDriveFileId(safe);
+    if (fileId) {
+      return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    }
+  }
+  return encodeURI(safe);
+};
+
+const normalizeOrderStatus = (status?: string): 'pending' | 'approved' | 'rejected' | 'unknown' => {
+  if (status === 'approved' || status === 'paid' || status === 'completed') return 'approved';
+  if (status === 'rejected') return 'rejected';
+  if (status === 'pending') return 'pending';
+  return 'unknown';
+};
 
 const EbookStore: React.FC = () => {
   const navigate = useNavigate();
@@ -25,14 +54,14 @@ const EbookStore: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'bkash' | 'nagad'>('bkash');
   const [paymentNumber, setPaymentNumber] = useState('');
   const [transactionId, setTransactionId] = useState('');
-  const [existingOrderId, setExistingOrderId] = useState('');
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
   const [isOrdering, setIsOrdering] = useState(false);
-  const [isCheckingOrder, setIsCheckingOrder] = useState(false);
   const [copied, setCopied] = useState(false);
   const [orderByEbookId, setOrderByEbookId] = useState<Record<string, EbookOrder>>({});
   const [recentSubmittedOrderId, setRecentSubmittedOrderId] = useState<string | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [sliderStepCount, setSliderStepCount] = useState(1);
+  const [activeStep, setActiveStep] = useState(0);
   const sliderRef = useRef<HTMLDivElement | null>(null);
 
   const paymentDetails = {
@@ -125,12 +154,28 @@ const EbookStore: React.FC = () => {
       .filter(Boolean) as Array<{ book: Ebook; order: EbookOrder; pdfUrl?: string; isApproved: boolean }>;
   }, [books, orderByEbookId]);
 
-  const scrollSlider = (direction: 'left' | 'right') => {
+  useEffect(() => {
     const container = sliderRef.current;
     if (!container) return;
-    const offset = container.clientWidth * 0.65;
-    container.scrollBy({ left: direction === 'left' ? -offset : offset, behavior: 'smooth' });
-  };
+
+    const updateIndicators = () => {
+      const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+      const step = Math.max(220, Math.floor(container.clientWidth * 0.82));
+      const count = maxScrollLeft > 0 ? Math.floor(maxScrollLeft / step) + 1 : 1;
+      const current = maxScrollLeft > 0 ? Math.round(container.scrollLeft / step) : 0;
+      setSliderStepCount(count);
+      setActiveStep(Math.max(0, Math.min(current, count - 1)));
+    };
+
+    updateIndicators();
+    container.addEventListener('scroll', updateIndicators, { passive: true });
+    window.addEventListener('resize', updateIndicators);
+
+    return () => {
+      container.removeEventListener('scroll', updateIndicators);
+      window.removeEventListener('resize', updateIndicators);
+    };
+  }, [filteredBooks.length, loading]);
 
   useEffect(() => {
     const container = sliderRef.current;
@@ -138,21 +183,18 @@ const EbookStore: React.FC = () => {
     if (container.scrollWidth <= container.clientWidth + 4) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    let direction: 1 | -1 = 1;
-    const step = Math.max(180, Math.floor(container.clientWidth * 0.5));
+    const step = Math.max(220, Math.floor(container.clientWidth * 0.82));
 
     const timer = window.setInterval(() => {
       const maxScrollLeft = container.scrollWidth - container.clientWidth;
       if (maxScrollLeft <= 0) return;
-
-      if (direction === 1 && container.scrollLeft >= maxScrollLeft - 4) {
-        direction = -1;
-      } else if (direction === -1 && container.scrollLeft <= 4) {
-        direction = 1;
+      const next = container.scrollLeft + step;
+      if (next >= maxScrollLeft - 4) {
+        container.scrollTo({ left: 0, behavior: 'smooth' });
+        return;
       }
-
-      container.scrollBy({ left: direction * step, behavior: 'smooth' });
-    }, 2500);
+      container.scrollTo({ left: next, behavior: 'smooth' });
+    }, 2800);
 
     return () => window.clearInterval(timer);
   }, [filteredBooks, loading]);
@@ -166,7 +208,6 @@ const EbookStore: React.FC = () => {
     setPaymentMethod('bkash');
     setPaymentNumber('');
     setTransactionId('');
-    setExistingOrderId('');
     setCopied(false);
     setOrderStatus(null);
   };
@@ -204,39 +245,6 @@ const EbookStore: React.FC = () => {
     }
   };
 
-  const handleUnlockByOrderId = async () => {
-    if (!orderModal || !existingOrderId.trim()) {
-      setOrderStatus('অর্ডার আইডি লিখুন।');
-      return;
-    }
-    setIsCheckingOrder(true);
-    try {
-      const order = await fetchEbookOrderById(existingOrderId.trim());
-      if (!order) {
-        setOrderStatus('এই অর্ডার আইডি পাওয়া যায়নি।');
-        return;
-      }
-      if (order.ebookId !== orderModal.id) {
-        setOrderStatus('এই অর্ডার আইডি এই ইবুকের জন্য না।');
-        return;
-      }
-      persistOrderAccess(orderModal.id, order.id);
-      setOrderByEbookId((prev) => ({ ...prev, [orderModal.id]: order }));
-      if (order.status === 'approved' || order.status === 'paid' || order.status === 'completed') {
-        setOrderStatus('অর্ডার approved. Download/Read আনলক হয়েছে।');
-      } else if (order.status === 'rejected') {
-        setOrderStatus('অর্ডার rejected হয়েছে।');
-      } else {
-        setOrderStatus('অর্ডার pending আছে। approve হলে unlock হবে।');
-      }
-    } catch (error) {
-      console.error(error);
-      setOrderStatus('অর্ডার আইডি যাচাই করা যায়নি।');
-    } finally {
-      setIsCheckingOrder(false);
-    }
-  };
-
   const getTierLabel = (book: Ebook) => {
     if (book.price === 0) return 'ফ্রি';
     if (book.price > 500) return 'প্রিমিয়াম';
@@ -244,6 +252,10 @@ const EbookStore: React.FC = () => {
   };
 
   const handleGoUserDashboard = () => {
+    if (user) {
+      navigate('/orders');
+      return;
+    }
     navigate('/login?next=/orders');
   };
 
@@ -257,10 +269,28 @@ const EbookStore: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center space-y-2">
           <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">নলেজ হাব: সুস্থতার গাইডলাইন</h2>
+          <p className="mx-auto max-w-2xl text-sm text-slate-500 sm:text-base">
+            আপনার দৈনন্দিন জীবনধারা, পুষ্টি ও সুস্থতার জন্য রিসার্চ-ভিত্তিক ইবুক গাইড।
+          </p>
+          <div className="mt-3 flex justify-center">
+            <svg viewBox="0 0 240 28" className="h-5 w-52 text-emerald-500/70" fill="none" aria-hidden="true">
+              <path
+                d="M4 14C36 2 66 26 98 14C130 2 160 26 192 14C207 8 221 8 236 14"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+          <div className="mt-1 flex items-center justify-center gap-2" aria-hidden="true">
+            <span className="h-2 w-2 rounded-full bg-emerald-600" />
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2 text-sm font-medium text-slate-600">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-sm font-medium text-slate-600">
             {categoryOptions.map((category) => (
               <button
                 key={category}
@@ -274,22 +304,6 @@ const EbookStore: React.FC = () => {
                 {categoryLabels[category]}
               </button>
             ))}
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              onClick={() => scrollSlider('left')}
-              aria-label="ইবুক পেছনে"
-              className="h-10 w-10 rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-slate-300"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => scrollSlider('right')}
-              aria-label="ইবুক সামনে"
-              className="h-10 w-10 rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-slate-300"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
           </div>
         </div>
 
@@ -313,27 +327,44 @@ const EbookStore: React.FC = () => {
                 const hasDownload = Boolean(downloadUrl);
                 const tier = getTierLabel(book);
                 const accessOrder = orderByEbookId[book.id];
-                const isOrderApproved =
-                  accessOrder?.status === 'approved' || accessOrder?.status === 'paid' || accessOrder?.status === 'completed';
+                const orderState = normalizeOrderStatus(accessOrder?.status);
+                const isOrderApproved = orderState === 'approved';
                 return (
                   <article
                     key={book.id}
-                    className="group min-w-[210px] max-w-[220px] snap-start overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                    className="group min-w-[280px] max-w-[320px] snap-start overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:min-w-[300px]"
                   >
-                    <div className="relative h-64 overflow-hidden bg-gray-100">
+                    <div className="relative h-56 overflow-hidden bg-gray-100 sm:h-60">
                       <img
-                        src={encodeURI(book.coverImage)}
+                        src={resolveCoverImageUrl(book.coverImage)}
                         alt={book.title}
                         loading="lazy"
+                        onError={(event) => {
+                          const current = event.currentTarget;
+                          const original = (book.coverImage ?? '').trim();
+                          const fileId = extractDriveFileId(original);
+
+                          if (fileId && current.src.includes('uc?export=view')) {
+                            current.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+                            return;
+                          }
+
+                          if (fileId && current.src.includes('thumbnail?id=')) {
+                            current.src = `https://drive.google.com/uc?export=download&id=${fileId}`;
+                            return;
+                          }
+
+                          current.src = FALLBACK_COVER_IMAGE;
+                        }}
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
                       <div className="absolute top-2 left-2 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600 shadow">
                         {tier}
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2 px-3 py-3">
-                      <h3 className="text-base font-semibold text-slate-900 leading-snug">{book.title}</h3>
-                      <ul className="space-y-1 text-[11px] text-slate-500">
+                    <div className="flex flex-col gap-2 px-4 py-4">
+                      <h3 className="text-lg font-semibold text-slate-900 leading-snug">{book.title}</h3>
+                      <ul className="space-y-1 text-xs text-slate-500">
                         <li className="truncate">ক্যাটাগরি: {categoryLabels[book.category]}</li>
                         <li className="truncate">{book.description}</li>
                       </ul>
@@ -368,6 +399,20 @@ const EbookStore: React.FC = () => {
                               <ArrowUpRight className="h-3.5 w-3.5" />
                               Read / Download
                             </a>
+                          ) : orderState === 'pending' ? (
+                            <button
+                              onClick={handleGoUserDashboard}
+                              className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition"
+                            >
+                              অর্ডার ট্র্যাক করুন
+                            </button>
+                          ) : orderState === 'rejected' ? (
+                            <button
+                              onClick={() => handleOrder(book)}
+                              className="rounded-full px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 transition"
+                            >
+                              পুনরায় অর্ডার
+                            </button>
                           ) : (
                             <button
                               onClick={() => handleOrder(book)}
@@ -379,7 +424,21 @@ const EbookStore: React.FC = () => {
                         )}
                       </div>
                       {!isFree && accessOrder && (
-                        <p className="text-[10px] font-semibold text-slate-500">অর্ডার রেকর্ড হয়েছে</p>
+                        <p
+                          className={`text-[10px] font-semibold ${
+                            orderState === 'approved'
+                              ? 'text-emerald-700'
+                              : orderState === 'rejected'
+                                ? 'text-rose-700'
+                                : 'text-amber-700'
+                          }`}
+                        >
+                          {orderState === 'approved'
+                            ? 'অর্ডার অনুমোদিত: ইবুক আনলক'
+                            : orderState === 'rejected'
+                              ? 'অর্ডার বাতিল হয়েছে'
+                              : 'অর্ডার পেন্ডিং: অ্যাডমিন রিভিউ চলছে'}
+                        </p>
                       )}
                     </div>
                   </article>
@@ -388,48 +447,24 @@ const EbookStore: React.FC = () => {
             )}
           </div>
         )}
-
-        {orderStatus && (
-          <div className="text-center text-sm text-emerald-600">{orderStatus}</div>
-        )}
-
-        {myEbookOrders.length > 0 && (
-          <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5 space-y-3">
-            <h3 className="text-base font-bold text-slate-900">আমার ইবুক অর্ডার</h3>
-            <div className="grid gap-3 md:grid-cols-2">
-              {myEbookOrders.map(({ book, order, pdfUrl, isApproved }) => (
-                <article key={order.id} className="rounded-2xl border border-slate-200 bg-white p-3 space-y-2">
-                  <p className="text-sm font-semibold text-slate-900">{book.title}</p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {isApproved && pdfUrl ? (
-                      <>
-                        <a
-                          href={pdfUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
-                        >
-                          View PDF
-                        </a>
-                        <a
-                          href={pdfUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
-                        >
-                          Download
-                        </a>
-                      </>
-                    ) : (
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
-                        রিভিউ চলছে
-                      </span>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
+        {sliderStepCount > 1 && (
+          <div className="mt-2 flex items-center justify-center gap-2">
+            {Array.from({ length: sliderStepCount }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  const container = sliderRef.current;
+                  if (!container) return;
+                  const step = Math.max(220, Math.floor(container.clientWidth * 0.82));
+                  container.scrollTo({ left: step * index, behavior: 'smooth' });
+                }}
+                aria-label={`ইবুক স্লাইড ${index + 1}`}
+                className={`h-2.5 rounded-full transition-all ${
+                  activeStep === index ? 'w-7 bg-emerald-600' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                }`}
+              />
+            ))}
+          </div>
         )}
 
         {orderModal && (
@@ -504,26 +539,6 @@ const EbookStore: React.FC = () => {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-                <p className="text-xs text-slate-600">আগের Order ID থাকলে status check করুন</p>
-                <div className="flex gap-2">
-                  <input
-                    value={existingOrderId}
-                    onChange={(event) => setExistingOrderId(event.target.value)}
-                    type="text"
-                    placeholder="Order ID"
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white"
-                  />
-                  <button
-                    onClick={handleUnlockByOrderId}
-                    disabled={isCheckingOrder}
-                    className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
-                  >
-                    {isCheckingOrder ? 'চেক...' : 'চেক'}
-                  </button>
-                </div>
-              </div>
-
               {isModalOrderApproved && modalBookLink ? (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                   <p className="text-xs font-semibold text-emerald-700 mb-2">Order approved. এখন PDF access ready.</p>
@@ -563,10 +578,6 @@ const EbookStore: React.FC = () => {
                   {isOrdering ? 'সাবমিট হচ্ছে...' : 'অর্ডার সাবমিট'}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-500 flex items-center gap-1">
-                <Lock className="h-3.5 w-3.5" />
-                Admin approve করার পরেই Download/Read অপশন আনলক হবে।
-              </p>
             </div>
           </div>
         )}
@@ -577,7 +588,7 @@ const EbookStore: React.FC = () => {
             <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
               <h3 className="text-xl font-bold text-slate-900">অর্ডার কনফার্মড</h3>
               <p className="text-sm text-slate-600">
-                আপনার ইবুক অর্ডার রিসিভ হয়েছে। স্ট্যাটাস ট্র্যাক করতে লগইন করে অর্ডার পেজ দেখুন।
+                আপনার ইবুক অর্ডার রিসিভ হয়েছে। স্ট্যাটাস ট্র্যাক করতে অর্ডার পেজ দেখুন।
               </p>
               {recentSubmittedOrderId && (
                 <p className="text-xs text-slate-500">
@@ -595,7 +606,7 @@ const EbookStore: React.FC = () => {
                   onClick={handleGoUserDashboard}
                   className="flex-1 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
                 >
-                  Login / Signup
+                  {user ? 'অর্ডার পেজে যান' : 'Login / Signup'}
                 </button>
               </div>
             </div>

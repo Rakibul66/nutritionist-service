@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { submitFeedback } from '../services/firebaseService';
+import { useAuth } from '../contexts/AuthContext';
 
 type FormState = {
   name: string;
@@ -16,6 +17,7 @@ const initialFormState: FormState = {
 };
 
 const FeedbackForm: React.FC = () => {
+  const { user } = useAuth();
   const [form, setForm] = useState<FormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -36,6 +38,8 @@ const FeedbackForm: React.FC = () => {
         role: form.role.trim(),
         content: form.content.trim(),
         image: form.image.trim() || 'https://picsum.photos/100/100?random=99',
+        userId: user?.uid,
+        userEmail: user?.email ?? undefined,
       });
       setForm(initialFormState);
       setStatusMessage('ধন্যবাদ। আপনার ফিডব্যাক জমা হয়েছে, অ্যাডমিন অনুমোদনের পর এটি প্রকাশ হবে।');

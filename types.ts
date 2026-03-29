@@ -43,11 +43,15 @@ export interface Feedback {
   role: string;
   content: string;
   image: string;
+  userId?: string;
+  userEmail?: string;
   status: FeedbackStatus;
   submittedAt: string;
+  updatedAt?: string;
 }
 
-export type FeedbackSubmitPayload = Pick<Feedback, 'name' | 'role' | 'content' | 'image'>;
+export type FeedbackSubmitPayload = Pick<Feedback, 'name' | 'role' | 'content' | 'image' | 'userId' | 'userEmail'>;
+export type FeedbackUpdatePayload = Pick<Feedback, 'name' | 'role' | 'content' | 'image'>;
 
 export interface FaqItem {
   id: string;

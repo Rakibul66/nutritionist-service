@@ -44,6 +44,16 @@ const Testimonials: React.FC = () => {
           <p className="mt-2 text-sm text-slate-500 max-w-3xl mx-auto">
             আমাদের সেবা নিয়ে ক্লায়েন্টদের বাস্তব মতামত দেখুন।
           </p>
+          <div className="mt-4 flex justify-center">
+            <svg viewBox="0 0 240 28" className="h-5 w-52 text-emerald-500/70" fill="none" aria-hidden="true">
+              <path
+                d="M4 14C36 2 66 26 98 14C130 2 160 26 192 14C207 8 221 8 236 14"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
         </div>
 
         {testimonials.length ? (

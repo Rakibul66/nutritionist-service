@@ -84,6 +84,16 @@ const HealthCalculators: React.FC = () => {
           <p className="mt-3 text-base text-slate-500">
             নিচের যেকোনো ফিল্ড পরিবর্তন করলে তাৎক্ষণিকভাবে আপনার আনুমানিক ফলাফল দেখাবে।
           </p>
+          <div className="mt-4 flex justify-center">
+            <svg viewBox="0 0 240 28" className="h-5 w-52 text-emerald-500/70" fill="none" aria-hidden="true">
+              <path
+                d="M4 14C36 2 66 26 98 14C130 2 160 26 192 14C207 8 221 8 236 14"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">

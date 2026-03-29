@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Menu, X, Leaf } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,6 +9,12 @@ const Navbar: React.FC = () => {
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const newsItems = [
+    { text: 'পার্সোনালাইজড কনসালটেন্সি প্যাকেজে বুকিং চলছে', tone: 'text-emerald-700' },
+    { text: 'শিশুর গ্রোথ চার্ট চেকার: ০-৫ বছর প্রাথমিক স্ক্রিনিং', tone: 'text-sky-700' },
+    { text: 'থেরাপিউটিক, শিশু পুষ্টি ও বিউটি-ওয়েলনেস ইবুক কালেকশন', tone: 'text-fuchsia-700' },
+    { text: 'অর্ডার স্ট্যাটাস ট্র্যাক করুন লগইন করে', tone: 'text-amber-700' },
+  ];
 
   useEffect(() => {
     setAvatarFailed(false);
@@ -35,6 +42,41 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm border-b border-green-100">
+      <div className="border-b border-emerald-100 bg-emerald-50/80">
+        <div className="mx-auto flex h-9 max-w-7xl items-center overflow-hidden px-4 sm:px-6 lg:px-8">
+          <div className="relative min-w-0 flex-1 overflow-hidden">
+            <div
+              className="flex w-max whitespace-nowrap text-xs font-semibold sm:text-sm"
+              style={{ animation: 'ticker 24s linear infinite', willChange: 'transform' }}
+            >
+              <div className="pr-8">
+                {newsItems.map((item, index) => (
+                  <span key={`news-a-${index}`} className={`mr-8 inline-flex items-center ${item.tone}`}>
+                    <span className="mr-2 text-emerald-400">●</span>
+                    {item.text}
+                  </span>
+                ))}
+              </div>
+              <div className="pr-8" aria-hidden="true">
+                {newsItems.map((item, index) => (
+                  <span key={`news-b-${index}`} className={`mr-8 inline-flex items-center ${item.tone}`}>
+                    <span className="mr-2 text-emerald-400">●</span>
+                    {item.text}
+                  </span>
+                ))}
+              </div>
+              <div className="pr-8" aria-hidden="true">
+                {newsItems.map((item, index) => (
+                  <span key={`news-c-${index}`} className={`mr-8 inline-flex items-center ${item.tone}`}>
+                    <span className="mr-2 text-emerald-400">●</span>
+                    {item.text}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
@@ -82,13 +124,22 @@ const Navbar: React.FC = () => {
                     </span>
                   </button>
                   {profileMenuOpen ? (
-                    <div className="absolute right-0 top-11 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                      <a
-                        href="/orders"
+                    <div className="absolute right-0 top-11 z-50 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                      <div className="absolute -top-1.5 right-6 h-3 w-3 rotate-45 border-l border-t border-slate-200 bg-white" />
+                      <Link
+                        to="/my-feedback"
+                        onClick={() => setProfileMenuOpen(false)}
+                        className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                      >
+                        ফিডব্যাক
+                      </Link>
+                      <Link
+                        to="/orders"
+                        onClick={() => setProfileMenuOpen(false)}
                         className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                       >
                         অর্ডার
-                      </a>
+                      </Link>
                       <button
                         onClick={async () => {
                           await logout();
@@ -151,13 +202,20 @@ const Navbar: React.FC = () => {
                   ) : null}
                   <span className="text-sm font-medium text-gray-700 truncate">{user.displayName || user.email}</span>
                 </div>
-                <a
-                  href="/orders"
+                <Link
+                  to="/my-feedback"
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full text-center rounded-md border border-green-200 bg-green-50 px-3 py-2 text-base font-medium text-green-700 hover:bg-green-100"
+                >
+                  ফিডব্যাক
+                </Link>
+                <Link
+                  to="/orders"
                   onClick={() => setIsOpen(false)}
                   className="block w-full text-center rounded-md border border-green-200 bg-green-50 px-3 py-2 text-base font-medium text-green-700 hover:bg-green-100"
                 >
                   অর্ডার
-                </a>
+                </Link>
                 <button
                   onClick={async () => {
                     await logout();
@@ -180,6 +238,12 @@ const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+      <style>{`
+        @keyframes ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-33.333%); }
+        }
+      `}</style>
     </nav>
   );
 };

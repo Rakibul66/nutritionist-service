@@ -15,8 +15,8 @@ const HomePage: React.FC = () => (
     <main>
       <Hero />
       <About />
+      <Services compact />
       <ChildGrowthChecker />
-      <Services />
       <EbookStore />
       <Testimonials />
       <LeadMagnet />

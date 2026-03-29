@@ -17,6 +17,7 @@ import UserLoginPage from './pages/UserLoginPage';
 import ProfilePage from './pages/admin/ProfilePage';
 import UserDashboardPage from './pages/UserDashboardPage';
 import ServiceIntakePage from './pages/ServiceIntakePage';
+import UserFeedbackPage from './pages/UserFeedbackPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/AuthContext';
 
@@ -66,6 +67,14 @@ function App() {
             element={
               <UserOrdersRoute>
                 <ServiceIntakePage />
+              </UserOrdersRoute>
+            }
+          />
+          <Route
+            path="/my-feedback"
+            element={
+              <UserOrdersRoute>
+                <UserFeedbackPage />
               </UserOrdersRoute>
             }
           />
