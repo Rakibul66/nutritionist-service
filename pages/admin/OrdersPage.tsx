@@ -31,7 +31,14 @@ const humanizeExtendedKey = (key: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 
-const InfoRows: React.FC<{ rows: Array<{ label: string; value: string | null | undefined }> }> = ({ rows }) => {
+const toWhatsAppLink = (value: string | null | undefined) => {
+  const digits = (value ?? '').replace(/\D/g, '');
+  if (!digits) return '';
+  const normalized = digits.startsWith('88') ? digits : `88${digits}`;
+  return `https://wa.me/${normalized}`;
+};
+
+const InfoRows: React.FC<{ rows: Array<{ label: string; value: string | null | undefined; href?: string }> }> = ({ rows }) => {
   const visible = rows.filter((row) => row.value && row.value.trim());
   if (!visible.length) {
     return <p className="text-xs text-slate-500">কোনো তথ্য নেই।</p>;
@@ -40,7 +47,14 @@ const InfoRows: React.FC<{ rows: Array<{ label: string; value: string | null | u
     <div className="grid gap-1">
       {visible.map((row) => (
         <p key={row.label} className="text-xs text-slate-600">
-          <span className="font-semibold text-slate-800">{row.label}:</span> {row.value}
+          <span className="font-semibold text-slate-800">{row.label}:</span>{' '}
+          {row.href ? (
+            <a href={row.href} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+              {row.value}
+            </a>
+          ) : (
+            row.value
+          )}
         </p>
       ))}
     </div>
@@ -282,6 +296,11 @@ const OrdersPage: React.FC = () => {
                                       { label: 'কোমরের মাপ', value: data.waist },
                                       { label: 'Blood Group', value: data.bloodGroup },
                                       { label: 'মূল লক্ষ্য', value: data.goal },
+                                      {
+                                        label: 'WhatsApp',
+                                        value: data.whatsappNumber,
+                                        href: toWhatsAppLink(data.whatsappNumber),
+                                      },
                                     ]}
                                   />
                                 </div>

@@ -147,6 +147,7 @@ export interface ServiceIntakeFormData {
   preferredFoods: string;
   avoidFoods: string;
   additionalNotes: string;
+  whatsappNumber: string;
   extendedAnswers: Record<string, string>;
   medicalReportUrls: string[];
 }

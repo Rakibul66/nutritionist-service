@@ -483,6 +483,7 @@ const mapDocToServiceIntake = (docData: DocumentData & { id?: string }): Service
     preferredFoods: docData.data?.preferredFoods ?? '',
     avoidFoods: docData.data?.avoidFoods ?? '',
     additionalNotes: docData.data?.additionalNotes ?? '',
+    whatsappNumber: docData.data?.whatsappNumber ?? '',
     extendedAnswers:
       docData.data?.extendedAnswers && typeof docData.data.extendedAnswers === 'object'
         ? docData.data.extendedAnswers

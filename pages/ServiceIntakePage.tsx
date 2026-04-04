@@ -66,6 +66,7 @@ const INITIAL_FORM: ServiceIntakeFormData = {
   preferredFoods: '',
   avoidFoods: '',
   additionalNotes: '',
+  whatsappNumber: '',
   extendedAnswers: {},
   medicalReportUrls: [],
 };
@@ -357,8 +358,11 @@ const ServiceIntakePage: React.FC = () => {
 
   const saveForm = async (submit: boolean) => {
     if (!order || !orderId) return;
-    if (submit && (!formData.consentAccepted || !formData.fullName.trim() || !formData.goal.trim())) {
-      setStatusMessage('সাবমিটের জন্য সম্মতি, নাম এবং মূল লক্ষ্য পূরণ করুন।');
+    if (
+      submit &&
+      (!formData.consentAccepted || !formData.fullName.trim() || !formData.goal.trim() || !formData.whatsappNumber.trim())
+    ) {
+      setStatusMessage('সাবমিটের জন্য সম্মতি, নাম, মূল লক্ষ্য এবং WhatsApp নম্বর পূরণ করুন।');
       return;
     }
 
@@ -397,6 +401,7 @@ const ServiceIntakePage: React.FC = () => {
     formData.waist,
     formData.bloodGroup,
     formData.goal,
+    formData.whatsappNumber,
     formData.dailyWorkType,
     formData.exerciseFrequency,
     formData.foodPattern,
@@ -834,6 +839,17 @@ const ServiceIntakePage: React.FC = () => {
                       );
                     })}
                   </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">WhatsApp নম্বর</label>
+                  <input
+                    type="tel"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+                    value={formData.whatsappNumber}
+                    onChange={(e) => updateField('whatsappNumber', e.target.value)}
+                    placeholder="যেমন: 01XXXXXXXXX"
+                  />
                 </div>
               </div>
             )}

@@ -359,6 +359,7 @@ const asServiceIntake = (entry: Partial<ServiceIntakeForm>): ServiceIntakeForm =
     preferredFoods: entry.data?.preferredFoods ?? '',
     avoidFoods: entry.data?.avoidFoods ?? '',
     additionalNotes: entry.data?.additionalNotes ?? '',
+    whatsappNumber: entry.data?.whatsappNumber ?? '',
     extendedAnswers:
       entry.data?.extendedAnswers && typeof entry.data.extendedAnswers === 'object'
         ? entry.data.extendedAnswers
